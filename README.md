@@ -9,6 +9,7 @@ Features:
 - Music button (music not included due to copyright).
 
 <img width="1662" height="913" alt="image" src="https://github.com/user-attachments/assets/52388def-6696-416d-b39f-d76a2c814d31" />
+
 <img width="800" height="914" alt="image" src="https://github.com/user-attachments/assets/bdfcfba2-2f6d-4868-baf9-7deeca5e2427" />
 
 # Installation
