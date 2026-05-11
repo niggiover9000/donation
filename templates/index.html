@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card premium-card border-0 shadow-lg">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold mb-2">Spendenaufruf</h2>
+                    <p class="text-muted">Gib dein Gebot ab. Vielen Dank für deine Unterstützung!</p>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill mt-2 premium-btn-outline" id="soundBtn" title="Zufälligen Sound abspielen">
+                        <i class="bi bi-music-note-beamed me-1"></i> Sound
+                    </button>
+                </div>
+
+                {% if request.query_params.get('success') == 'created' %}
+                <div class="alert alert-success d-flex align-items-center mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+                    <div>Vielen Dank! Dein Gebot wurde erfolgreich abgegeben.</div>
+                </div>
+                {% elif request.query_params.get('success') == 'updated' %}
+                <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                    <i class="bi bi-info-circle-fill me-2 fs-4"></i>
+                    <div>Dein Gebot wurde erfolgreich aktualisiert.</div>
+                </div>
+                {% endif %}
+
+                {% if error %}
+                <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+                    <div>{{ error }}</div>
+                </div>
+                {% endif %}
+
+                {% if existing_bid %}
+                <div class="row mb-4 g-3">
+                    <div class="col-6">
+                        <div class="alert alert-light border text-center mb-0 h-100 premium-alert d-flex flex-column justify-content-center">
+                            <span class="d-block text-uppercase small fw-bold text-muted mb-1">Dein Gebot</span>
+                            <span class="fs-2 fw-bold text-success">{{ "%.2f"|format(existing_bid.amount) }} €</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="alert alert-light border text-center mb-0 h-100 premium-alert d-flex flex-column justify-content-center">
+                            <span class="d-block text-uppercase small fw-bold text-muted mb-1">Mindestgebot</span>
+                            <span class="fs-2 fw-bold text-primary">{{ "%.2f"|format(min_bid) }} €</span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-light border text-center mb-4 premium-alert">
+                    <span class="d-block text-uppercase small fw-bold text-muted mb-1">Aktuelles Mindestgebot</span>
+                    <span class="fs-2 fw-bold text-primary">{{ "%.2f"|format(min_bid) }} €</span>
+                </div>
+                {% endif %}
+
+                {% if settings and settings.deadline %}
+                <div class="alert alert-warning border text-center mb-4 premium-alert" id="countdown-container">
+                    <span class="d-block text-uppercase small fw-bold mb-1"><i class="bi bi-clock-history me-1"></i> Verbleibende Zeit</span>
+                    <span class="fs-3 fw-bold" id="countdown-timer">--:--:--</span>
+                    <div id="countdown-expired" class="d-none text-danger fw-bold mt-2">Die Frist ist abgelaufen. Es können keine Gebote mehr abgegeben oder geändert werden.</div>
+                </div>
+                {% endif %}
+
+                <!-- SOCIAL FEATURES START -->
+                {% if settings %}
+                    {% if settings.feature_goal and total_amount is defined %}
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-end mb-1">
+                            <span class="small fw-bold text-muted">Unser Ziel: {{ "%.2f"|format(settings.goal_amount) }} €</span>
+                            <span class="small fw-bold text-primary">{{ "%.2f"|format(total_amount) }} € erreicht</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 10px;">
+                            {% set percent = (total_amount / settings.goal_amount * 100) if settings.goal_amount > 0 else 0 %}
+                            {% set percent = percent if percent <= 100 else 100 %}
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: {{ percent }}%;" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="text-center small text-muted">
+                            <i class="bi bi-people-fill me-1"></i> Mach mit! Bereits <strong>{{ donor_count }}</strong> Personen haben gespendet.
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if settings.feature_leaderboard and top_bids %}
+                    <div class="card bg-light border-0 mb-4 premium-card">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-trophy-fill text-warning me-1"></i> Top Spender</h6>
+                            <ul class="list-group list-group-flush bg-transparent">
+                                {% for bid in top_bids %}
+                                <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between align-items-center border-0">
+                                    <span class="fw-medium">
+                                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% endif %}
+                                        {{ bid.name }}
+                                    </span>
+                                    <span class="fw-bold text-success">{{ "%.2f"|format(bid.amount) }} €</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if settings.feature_ticker and recent_bids %}
+                    <div class="alert alert-secondary border-0 d-flex align-items-center p-2 mb-4 overflow-hidden position-relative" style="height: 40px;">
+                        <span class="badge bg-secondary me-3 z-1">Live</span>
+                        <div class="ticker-wrap w-100 position-absolute start-0 h-100" style="padding-left: 70px;">
+                            <div class="ticker-move d-flex h-100 align-items-center">
+                                {% for bid in recent_bids %}
+                                <div class="ticker-item text-nowrap px-4 small">
+                                    <strong>{{ bid.name }}</strong> hat gerade <span class="text-success fw-bold">{{ "%.2f"|format(bid.amount) }} €</span> gespendet! <i class="bi bi-heart-fill text-danger ms-1"></i>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+                <!-- SOCIAL FEATURES END -->
+
+                <form action="/bid" method="post" class="needs-validation" id="bid-form">
+                    <div class="mb-4">
+                        <label for="name" class="form-label fw-semibold">Dein Name</label>
+                        <input type="text" class="form-control form-control-lg premium-input" id="name" name="name" 
+                            placeholder="Max Mustermann" 
+                            value="{{ existing_bid.name if existing_bid else '' }}" required>
+                    </div>
+                    
+                    {% if settings and (settings.org1 or settings.org2 or settings.org3) %}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Spendenorganisation</label>
+                        <select name="organization" class="form-select form-select-lg premium-input" required>
+                            <option value="" disabled {% if not existing_bid or not existing_bid.organization %}selected{% endif %}>Bitte wählen...</option>
+                            {% if settings.org1 %}<option value="{{ settings.org1 }}" {% if existing_bid and existing_bid.organization == settings.org1 %}selected{% endif %}>{{ settings.org1 }}</option>{% endif %}
+                            {% if settings.org2 %}<option value="{{ settings.org2 }}" {% if existing_bid and existing_bid.organization == settings.org2 %}selected{% endif %}>{{ settings.org2 }}</option>{% endif %}
+                            {% if settings.org3 %}<option value="{{ settings.org3 }}" {% if existing_bid and existing_bid.organization == settings.org3 %}selected{% endif %}>{{ settings.org3 }}</option>{% endif %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-5">
+                        <label for="amount" class="form-label fw-semibold">Dein Gebot (€)</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text premium-input-addon border-end-0 bg-transparent text-muted">€</span>
+                            <input type="number" step="0.01" class="form-control border-start-0 premium-input ps-0" id="amount" name="amount" 
+                                min="{{ min_bid }}" 
+                                placeholder="{{ min_bid }}" 
+                                value="{{ existing_bid.amount if existing_bid else '' }}" required>
+                        </div>
+                        <div class="form-text mt-2"><i class="bi bi-info-circle"></i> Du kannst dein Gebot jederzeit über dieses Gerät ändern.</div>
+                    </div>
+
+                    <div class="mb-4 form-check text-start">
+                        <input class="form-check-input mt-1" type="checkbox" id="commitment" name="commitment" required>
+                        <label class="form-check-label small text-muted" for="commitment">
+                            Ich bestätige hiermit, dass ich ein verbindliches Gebot abgebe und mich verpflichte, diesen Betrag zu spenden.
+                        </label>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg premium-btn">
+                            {% if existing_bid %}
+                            Gebot aktualisieren <i class="bi bi-arrow-right ms-2"></i>
+                            {% else %}
+                            Gebot abgeben <i class="bi bi-heart-fill ms-2"></i>
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse the sounds array passed from FastAPI
+        const sounds = {{ sounds | tojson | safe }};
+        const soundBtn = document.getElementById('soundBtn');
+        let currentAudio = null;
+
+        if (soundBtn && sounds && sounds.length > 0) {
+            soundBtn.addEventListener('click', function() {
+                // Add a small animation effect to the button
+                soundBtn.classList.add('scale-up');
+                setTimeout(() => soundBtn.classList.remove('scale-up'), 200);
+
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                }
+                const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
+                currentAudio = new Audio('/sounds/' + randomSound);
+                currentAudio.play().catch(e => console.error("Error playing sound:", e));
+            });
+        } else if (soundBtn) {
+            soundBtn.style.display = 'none'; // Hide if no sounds available
+        }
+
+        // Countdown Logic
+        const deadlineStr = "{{ settings.deadline if settings and settings.deadline else '' }}";
+        if (deadlineStr) {
+            const deadline = new Date(deadlineStr).getTime();
+            const timerEl = document.getElementById('countdown-timer');
+            const expiredEl = document.getElementById('countdown-expired');
+            const formEl = document.getElementById('bid-form');
+            const containerEl = document.getElementById('countdown-container');
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = deadline - now;
+
+                if (distance < 0) {
+                    if (typeof interval !== 'undefined') clearInterval(interval);
+                    timerEl.style.display = 'none';
+                    expiredEl.classList.remove('d-none');
+                    containerEl.classList.replace('alert-warning', 'alert-danger');
+                    
+                    // Disable form elements
+                    if (formEl) {
+                        const inputs = formEl.querySelectorAll('input, select, button');
+                        inputs.forEach(input => {
+                            input.disabled = true;
+                            input.style.opacity = '0.6';
+                        });
+                    }
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                let timeStr = "";
+                if (days > 0) timeStr += days + "d ";
+                timeStr += String(hours).padStart(2, '0') + ":" + 
+                           String(minutes).padStart(2, '0') + ":" + 
+                           String(seconds).padStart(2, '0');
+                
+                timerEl.innerText = timeStr;
+            }
+
+            updateCountdown();
+            var interval = setInterval(updateCountdown, 1000);
+        }
+    });
+</script>
+<style>
+    .scale-up {
+        transform: scale(1.1);
+        transition: transform 0.2s ease;
+    }
+    
+    /* Ticker styles */
+    .ticker-wrap {
+        overflow: hidden;
+    }
+    .ticker-move {
+        display: inline-flex;
+        animation: ticker 20s linear infinite;
+    }
+    .ticker-item {
+        display: inline-block;
+    }
+    @keyframes ticker {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+    }
+</style>
+{% endblock %}

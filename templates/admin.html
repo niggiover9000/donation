@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Admin Dashboard</h2>
+    <a href="/logout" class="btn btn-outline-secondary btn-sm"><i class="bi bi-box-arrow-right me-1"></i> Logout</a>
+</div>
+
+{% if request.query_params.get('success') == '1' %}
+<div class="alert alert-success py-2 mb-4">Einstellungen erfolgreich gespeichert.</div>
+{% elif request.query_params.get('success') == 'deleted' %}
+<div class="alert alert-success py-2 mb-4">Gebot erfolgreich gelöscht.</div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+    <!-- Stat Card -->
+    <div class="col-md-4">
+        <div class="card premium-card border-0 shadow-sm h-100 bg-primary text-white">
+            <div class="card-body p-4 text-center d-flex flex-column justify-content-center">
+                <h5 class="text-uppercase small fw-bold opacity-75 mb-2">Gesamtsumme</h5>
+                <h2 class="display-5 fw-bold mb-0">{{ "%.2f"|format(total) }} €</h2>
+                
+                {% if org_totals %}
+                <div class="mt-3 text-start bg-white bg-opacity-10 p-3 rounded">
+                    <h6 class="fw-bold mb-2 fs-6 border-bottom border-light border-opacity-25 pb-2">Nach Organisation:</h6>
+                    <ul class="list-unstyled mb-0 small">
+                        {% for org, amt in org_totals.items() %}
+                        <li class="d-flex justify-content-between mb-1">
+                            <span class="text-truncate me-2">{{ org }}</span>
+                            <span class="fw-bold">{{ "%.2f"|format(amt) }} €</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Card -->
+    <div class="col-md-8">
+        <div class="card premium-card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-gear-fill text-muted me-2"></i> Einstellungen</h5>
+                <form action="/admin/settings" method="post" class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label for="min_bid" class="form-label fw-semibold text-muted small">Mindestgebot (€)</label>
+                        <div class="input-group">
+                            <span class="input-group-text premium-input-addon bg-light border-end-0 text-muted">€</span>
+                            <input type="number" step="0.01" class="form-control border-start-0 premium-input bg-light" id="min_bid" name="min_bid" value="{{ min_bid }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-dark w-100 premium-btn">Speichern</button>
+                    </div>
+                    
+                    <div class="col-12 mt-4 mb-1">
+                        <label for="deadline" class="form-label fw-semibold text-muted small mb-0">Frist / Countdown (optional)</label>
+                        <input type="datetime-local" class="form-control premium-input bg-light" id="deadline" name="deadline" value="{{ settings.deadline if settings and settings.deadline else '' }}">
+                    </div>
+
+                    <div class="col-12 mt-4 mb-1">
+                        <label class="form-label fw-semibold text-muted small mb-0">Spendenorganisationen (optional, max 3)</label>
+                    </div>
+                    <div class="col-md-4 mt-0">
+                        <input type="text" class="form-control premium-input bg-light" placeholder="Organisation 1" name="org1" value="{{ settings.org1 if settings else '' }}">
+                    </div>
+                    <div class="col-md-4 mt-0">
+                        <input type="text" class="form-control premium-input bg-light" placeholder="Organisation 2" name="org2" value="{{ settings.org2 if settings else '' }}">
+                    </div>
+                    <div class="col-md-4 mt-0">
+                        <input type="text" class="form-control premium-input bg-light" placeholder="Organisation 3" name="org3" value="{{ settings.org3 if settings else '' }}">
+                    </div>
+
+                    <div class="col-12 mt-4 mb-1 border-top pt-3">
+                        <label class="form-label fw-semibold text-muted small mb-2"><i class="bi bi-people-fill me-1"></i> Social Features</label>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="feature_ticker" name="feature_ticker" value="true" {% if settings and settings.feature_ticker %}checked{% endif %}>
+                                    <label class="form-check-label small" for="feature_ticker">Live-Ticker</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="feature_leaderboard" name="feature_leaderboard" value="true" {% if settings and settings.feature_leaderboard %}checked{% endif %}>
+                                    <label class="form-check-label small" for="feature_leaderboard">Top Spender</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="feature_goal" name="feature_goal" value="true" {% if settings and settings.feature_goal %}checked{% endif %}>
+                                    <label class="form-check-label small" for="feature_goal">Spenden-Ziel</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2 w-50" id="goal_amount_container" {% if not (settings and settings.feature_goal) %}style="display: none;"{% endif %}>
+                            <label for="goal_amount" class="form-label text-muted small mb-1">Zielbetrag (€)</label>
+                            <input type="number" step="0.01" class="form-control premium-input bg-light form-control-sm" id="goal_amount" name="goal_amount" value="{{ settings.goal_amount if settings else 1000.0 }}">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bids Table -->
+<div class="card premium-card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="p-4 border-bottom">
+            <h5 class="fw-bold mb-0"><i class="bi bi-list-ul text-muted me-2"></i> Alle Gebote <span class="badge bg-secondary ms-2 rounded-pill">{{ bids|length }}</span></h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 custom-table">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>Name</th>
+                        <th>Organisation</th>
+                        <th class="text-end">Betrag</th>
+                        <th class="text-end pe-4">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bid in bids %}
+                    <tr>
+                        <td class="ps-4 text-muted small">#{{ bid.id }}</td>
+                        <td class="fw-medium">{{ bid.name }}</td>
+                        <td class="text-muted small">
+                            {% if bid.organization %}
+                            <span class="badge bg-light text-dark border">{{ bid.organization }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold text-success">{{ "%.2f"|format(bid.amount) }} €</td>
+                        <td class="text-end pe-4">
+                            <form action="/admin/delete_bid/{{ bid.id }}" method="post" class="d-inline" onsubmit="return confirm('Möchtest du dieses Gebot wirklich löschen?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Löschen"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                            Noch keine Gebote vorhanden.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const goalToggle = document.getElementById('feature_goal');
+        const goalContainer = document.getElementById('goal_amount_container');
+        if (goalToggle && goalContainer) {
+            goalToggle.addEventListener('change', function() {
+                goalContainer.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+    });
+</script>
+{% endblock %}
