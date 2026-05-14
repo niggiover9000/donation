@@ -1,0 +1,15 @@
+# Database
+*.db
+*.sqlite3
+donation.db
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
