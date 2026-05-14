@@ -60,6 +60,11 @@
                     </div>
 
                     <div class="col-12 mt-4 mb-1">
+                        <label for="paypal_link" class="form-label fw-semibold text-muted small mb-0">PayPal Account Link (für abgelaufenen Countdown)</label>
+                        <input type="url" class="form-control premium-input bg-light" id="paypal_link" name="paypal_link" placeholder="https://paypal.me/deinname" value="{{ settings.paypal_link if settings and settings.paypal_link else 'https://paypal.me/' }}">
+                    </div>
+
+                    <div class="col-12 mt-4 mb-1">
                         <label class="form-label fw-semibold text-muted small mb-0">Spendenorganisationen (optional, max 3)</label>
                     </div>
                     <div class="col-md-4 mt-0">

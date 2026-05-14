@@ -23,3 +23,4 @@ class Settings(Base):
     feature_leaderboard = Column(Boolean, default=False)
     feature_goal = Column(Boolean, default=False)
     goal_amount = Column(Float, default=1000.0)
+    paypal_link = Column(String, default="https://paypal.me/")

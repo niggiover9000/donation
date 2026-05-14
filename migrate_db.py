@@ -24,6 +24,11 @@ def migrate():
     except sqlite3.OperationalError:
         pass
 
+    try:
+        cursor.execute("ALTER TABLE settings ADD COLUMN paypal_link VARCHAR DEFAULT 'https://paypal.me/'")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
     print("Migration successful")

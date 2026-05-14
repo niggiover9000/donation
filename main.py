@@ -34,6 +34,10 @@ with engine.begin() as conn:
     except Exception:
         pass
     try:
+        conn.execute(text("ALTER TABLE settings ADD COLUMN paypal_link VARCHAR DEFAULT 'https://paypal.me/'"))
+    except Exception:
+        pass
+    try:
         conn.execute(text("ALTER TABLE bids ADD COLUMN organization VARCHAR DEFAULT ''"))
     except Exception:
         pass
@@ -52,12 +56,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Mount static files (CSS, JS)
+os.makedirs(os.path.join("static", "sounds"), exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/sounds", StaticFiles(directory="sounds"), name="sounds")
 
 def get_sounds():
     try:
-        return [f for f in os.listdir("sounds") if f.endswith((".mp3", ".wav", ".ogg"))]
+        return [f for f in os.listdir(os.path.join("static", "sounds")) if f.endswith((".mp3", ".wav", ".ogg"))]
     except FileNotFoundError:
         return []
 
@@ -281,6 +285,7 @@ def update_settings(
     feature_leaderboard: Optional[bool] = Form(False),
     feature_goal: Optional[bool] = Form(False),
     goal_amount: float = Form(1000.0),
+    paypal_link: Optional[str] = Form("https://paypal.me/"),
     db: Session = Depends(get_db), 
     admin: bool = Depends(verify_admin)
 ):
@@ -295,6 +300,7 @@ def update_settings(
         settings.feature_leaderboard = feature_leaderboard
         settings.feature_goal = feature_goal
         settings.goal_amount = goal_amount
+        settings.paypal_link = paypal_link or ""
         db.commit()
     return RedirectResponse(url="/admin?success=1", status_code=status.HTTP_303_SEE_OTHER)
 
