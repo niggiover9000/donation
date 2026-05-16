@@ -5,6 +5,7 @@ donation.db
 
 # Virtual Environment
 .venv/
+.idea/
 venv/
 env/
 
