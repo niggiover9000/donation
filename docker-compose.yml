@@ -12,3 +12,4 @@ services:
     volumes:
       # Mountet die lokale SQLite Datenbank, damit die Daten beim Neustart des Containers erhalten bleiben
       - ./donation.db:/app/donation.db
+      - ./sounds:/app/sounds
