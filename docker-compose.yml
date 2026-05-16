@@ -10,4 +10,4 @@ services:
       - ADMIN_PASSWORD="admin"
     volumes:
       - ./donation.db:/app/donation.db
-      - ./sounds/:/app/sounds/
+      - ./sounds/:/app/static/sounds/

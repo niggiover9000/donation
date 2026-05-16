@@ -14,7 +14,7 @@ Features:
 
 # Installation
 - Run the docker-compose.yaml
-- Create a folder "sounds" and add songs that play then the user presses the button.
+- Create a folder "sounds" in the docker root folder and add songs that play then the user presses the button.
 
 # Contributions
 Feel free to contribute to the project!
