@@ -1,7 +1,6 @@
 services:
   web:
     build: .
-    # ERSETZE <dein-dockerhub-username> DURCH DEINEN ECHTEN DOCKER HUB USERNAME
     image: niggiover9000/donation:latest
     container_name: donation_app
     ports:
@@ -10,6 +9,5 @@ services:
     environment:
       - ADMIN_PASSWORD="admin"
     volumes:
-      # Mountet die lokale SQLite Datenbank, damit die Daten beim Neustart des Containers erhalten bleiben
       - ./donation.db:/app/donation.db
-      - ./sounds:/app/sounds
+      - ./sounds/:/app/sounds/
