@@ -40,6 +40,14 @@
                             class="alert alert-light border text-center mb-0 h-100 premium-alert d-flex flex-column justify-content-center">
                             <span class="d-block text-uppercase small fw-bold text-muted mb-1">Dein Gebot</span>
                             <span class="fs-2 fw-bold text-success">{{ "%.2f"|format(existing_bid.amount) }} €</span>
+                            {% if existing_bid.bonus_points and existing_bid.bonus_points != 0.0 %}
+                            <span class="small fw-semibold mt-1 {% if existing_bid.bonus_points > 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.8rem;">
+                                {% if existing_bid.bonus_points > 0 %}+{% endif %}{{ "%.2f"|format(existing_bid.bonus_points) }} € Punkte
+                            </span>
+                            <span class="small text-muted" style="font-size: 0.75rem;">
+                                Gesamt: {{ "%.2f"|format(existing_bid.amount + existing_bid.bonus_points) }} €
+                            </span>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="col-6">
@@ -105,8 +113,13 @@
                                 {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{%
                                 endif %}
                                 {{ bid.name }}
+                                {% if bid.bonus_points and bid.bonus_points != 0.0 %}
+                                <span class="badge rounded-pill ms-1 {% if bid.bonus_points > 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if bid.bonus_points > 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.7rem;">
+                                    {% if bid.bonus_points > 0 %}+{% endif %}{{ "%.1f"|format(bid.bonus_points) }} Pkt.
+                                </span>
+                                {% endif %}
                             </span>
-                            <span class="fw-bold text-success">{{ "%.2f"|format(bid.amount) }} €</span>
+                            <span class="fw-bold text-success">{{ "%.2f"|format(bid.amount + (bid.bonus_points or 0.0)) }} €</span>
                         </li>
                         {% endfor %}
                     </ul>
@@ -123,7 +136,7 @@
                         {% for bid in recent_bids %}
                         <div class="ticker-item text-nowrap px-4 small">
                             <strong>{{ bid.name }}</strong> hat gerade <span class="text-success fw-bold">{{
-                                "%.2f"|format(bid.amount) }} €</span> gespendet! <i
+                                "%.2f"|format(bid.amount + (bid.bonus_points or 0.0)) }} €</span> gespendet! <i
                                 class="bi bi-heart-fill text-danger ms-1"></i>
                         </div>
                         {% endfor %}

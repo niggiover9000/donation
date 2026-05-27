@@ -41,6 +41,10 @@ with engine.begin() as conn:
         conn.execute(text("ALTER TABLE bids ADD COLUMN organization VARCHAR DEFAULT ''"))
     except Exception:
         pass
+    try:
+        conn.execute(text("ALTER TABLE bids ADD COLUMN bonus_points FLOAT DEFAULT 0.0"))
+    except Exception:
+        pass
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -76,10 +80,12 @@ def get_social_features_context(db: Session, settings: models.Settings):
         if settings.feature_ticker:
             context["recent_bids"] = db.query(models.Bid).order_by(models.Bid.id.desc()).limit(5).all()
         if settings.feature_leaderboard:
-            context["top_bids"] = db.query(models.Bid).order_by(models.Bid.amount.desc()).limit(3).all()
+            all_bids = db.query(models.Bid).all()
+            sorted_bids = sorted(all_bids, key=lambda b: b.amount + (b.bonus_points or 0.0), reverse=True)
+            context["top_bids"] = sorted_bids[:3]
         if settings.feature_goal:
             all_bids = db.query(models.Bid).all()
-            context["total_amount"] = sum(b.amount for b in all_bids)
+            context["total_amount"] = sum(b.amount + (b.bonus_points or 0.0) for b in all_bids)
             context["donor_count"] = len(all_bids)
     return context
 
@@ -246,7 +252,7 @@ def verify_admin(admin_token: Optional[str] = Cookie(None)):
 @app.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db), admin: bool = Depends(verify_admin)):
     bids = db.query(models.Bid).all()
-    total = sum(b.amount for b in bids)
+    total = sum(b.amount + (b.bonus_points or 0.0) for b in bids)
     settings = db.query(models.Settings).first()
     
     org_totals = {}
@@ -259,7 +265,7 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db), admin: bool
         if b.organization:
             if b.organization not in org_totals:
                 org_totals[b.organization] = 0
-            org_totals[b.organization] += b.amount
+            org_totals[b.organization] += b.amount + (b.bonus_points or 0.0)
 
     return templates.TemplateResponse(
         request=request,
@@ -311,6 +317,15 @@ def delete_bid(bid_id: int, db: Session = Depends(get_db), admin: bool = Depends
         db.delete(bid)
         db.commit()
     return RedirectResponse(url="/admin?success=deleted", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/admin/adjust_points/{bid_id}")
+def adjust_points(bid_id: int, bonus_points: float = Form(...), db: Session = Depends(get_db), admin: bool = Depends(verify_admin)):
+    bid = db.query(models.Bid).filter(models.Bid.id == bid_id).first()
+    if bid:
+        bid.bonus_points = bonus_points
+        db.commit()
+    return RedirectResponse(url="/admin?success=points_adjusted", status_code=status.HTTP_303_SEE_OTHER)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

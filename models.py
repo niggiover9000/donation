@@ -9,6 +9,7 @@ class Bid(Base):
     amount = Column(Float)
     token = Column(String, unique=True, index=True)
     organization = Column(String, default="")
+    bonus_points = Column(Float, default=0.0)
 
 class Settings(Base):
     __tablename__ = "settings"

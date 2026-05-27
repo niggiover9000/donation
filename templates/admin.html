@@ -10,6 +10,8 @@
 <div class="alert alert-success py-2 mb-4">Einstellungen erfolgreich gespeichert.</div>
 {% elif request.query_params.get('success') == 'deleted' %}
 <div class="alert alert-success py-2 mb-4">Gebot erfolgreich gelöscht.</div>
+{% elif request.query_params.get('success') == 'points_adjusted' %}
+<div class="alert alert-success py-2 mb-4">Punkte erfolgreich angepasst.</div>
 {% endif %}
 
 <div class="row g-4 mb-4">
@@ -145,7 +147,9 @@
                         <th class="ps-4">ID</th>
                         <th>Name</th>
                         <th>Organisation</th>
-                        <th class="text-end">Betrag</th>
+                        <th class="text-end">Betrag (Spende)</th>
+                        <th class="text-center" style="width: 220px;">Bonuspunkte</th>
+                        <th class="text-end">Gesamtsumme</th>
                         <th class="text-end pe-4">Aktion</th>
                     </tr>
                 </thead>
@@ -161,7 +165,16 @@
                             -
                             {% endif %}
                         </td>
-                        <td class="text-end fw-bold text-success">{{ "%.2f"|format(bid.amount) }} €</td>
+                        <td class="text-end text-muted">{{ "%.2f"|format(bid.amount) }} €</td>
+                        <td class="text-center">
+                            <form action="/admin/adjust_points/{{ bid.id }}" method="post" class="d-flex align-items-center justify-content-center gap-1 mx-auto" style="max-width: 170px;">
+                                <div class="input-group input-group-sm">
+                                    <input type="number" step="0.5" name="bonus_points" class="form-control text-center fw-bold bg-light" style="width: 70px;" value="{{ bid.bonus_points or 0.0 }}">
+                                    <button type="submit" class="btn btn-dark premium-btn" title="Punkte anpassen"><i class="bi bi-check-lg"></i></button>
+                                </div>
+                            </form>
+                        </td>
+                        <td class="text-end fw-bold text-success">{{ "%.2f"|format(bid.amount + (bid.bonus_points or 0.0)) }} €</td>
                         <td class="text-end pe-4">
                             <form action="/admin/delete_bid/{{ bid.id }}" method="post" class="d-inline"
                                 onsubmit="return confirm('Möchtest du dieses Gebot wirklich löschen?');">
@@ -172,7 +185,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                             Noch keine Gebote vorhanden.
                         </td>
